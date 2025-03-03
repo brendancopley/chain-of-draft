@@ -8,21 +8,20 @@ import asyncio
 import time
 from dotenv import load_dotenv
 
-from mcp.server import Server
+# Import the FastMCP module for modern MCP API
+from mcp.server.fastmcp import FastMCP
 from mcp.server.stdio import stdio_server
 
-from .analytics import AnalyticsService
-from .complexity import ComplexityEstimator
-from .examples import ExampleDatabase
-from .format import FormatEnforcer
-from .reasoning import ReasoningSelector, create_cod_prompt, create_cot_prompt
-from .client import ChainOfDraftClient
+# Import other modules
+from analytics import AnalyticsService
+from complexity import ComplexityEstimator
+from examples import ExampleDatabase
+from format import FormatEnforcer
+from reasoning import ReasoningSelector, create_cod_prompt, create_cot_prompt
+from client import ChainOfDraftClient
 
 # Load environment variables
 load_dotenv()
-
-# Initialize the MCP server
-app = Server("chain-of-draft")
 
 # Initialize services
 analytics = AnalyticsService()
@@ -30,6 +29,9 @@ complexity_estimator = ComplexityEstimator()
 example_db = ExampleDatabase()
 format_enforcer = FormatEnforcer()
 cod_client = ChainOfDraftClient()
+
+# Initialize FastMCP server
+app = FastMCP("chain-of-draft")
 
 @app.tool()
 async def chain_of_draft_solve(
@@ -40,8 +42,7 @@ async def chain_of_draft_solve(
     enforce_format: bool = True,
     adaptive_word_limit: bool = True
 ) -> str:
-    """
-    Solve a reasoning problem using Chain of Draft approach.
+    """Solve a reasoning problem using Chain of Draft approach.
     
     Args:
         problem: The problem to solve
@@ -84,8 +85,7 @@ async def math_solve(
     approach: str = None,
     max_words_per_step: int = None
 ) -> str:
-    """
-    Solve a math problem using Chain of Draft reasoning.
+    """Solve a math problem using Chain of Draft reasoning.
     
     Args:
         problem: The math problem to solve
@@ -105,8 +105,7 @@ async def code_solve(
     approach: str = None,
     max_words_per_step: int = None
 ) -> str:
-    """
-    Solve a coding problem using Chain of Draft reasoning.
+    """Solve a coding problem using Chain of Draft reasoning.
     
     Args:
         problem: The coding problem to solve
@@ -126,8 +125,7 @@ async def logic_solve(
     approach: str = None,
     max_words_per_step: int = None
 ) -> str:
-    """
-    Solve a logic problem using Chain of Draft reasoning.
+    """Solve a logic problem using Chain of Draft reasoning.
     
     Args:
         problem: The logic problem to solve
@@ -145,8 +143,7 @@ async def logic_solve(
 async def get_performance_stats(
     domain: str = None
 ) -> str:
-    """
-    Get performance statistics for CoD vs CoT approaches.
+    """Get performance statistics for CoD vs CoT approaches.
     
     Args:
         domain: Filter for specific domain (optional)
@@ -172,8 +169,7 @@ async def get_performance_stats(
     return result
 
 @app.tool()
-async def get_token_reduction(
-) -> str:
+async def get_token_reduction() -> str:
     """Get token reduction statistics for CoD vs CoT."""
     stats = await analytics.get_token_reduction_stats()
     
@@ -195,8 +191,7 @@ async def analyze_problem_complexity(
     problem: str,
     domain: str = "general"
 ) -> str:
-    """
-    Analyze the complexity of a problem.
+    """Analyze the complexity of a problem.
     
     Args:
         problem: The problem to analyze
@@ -224,14 +219,12 @@ async def main():
     # Initialize example database
     await example_db.get_examples("math")  # This will trigger example loading if needed
     
-    # Start the server
-    async with stdio_server() as streams:
-        print("Chain of Draft MCP Server starting...", file=os.sys.stderr)
-        await app.run(
-            streams[0],
-            streams[1],
-            app.create_initialization_options()
-        )
+    # Print startup message
+    print("Chain of Draft MCP Server starting...", file=os.sys.stderr)
 
 if __name__ == "__main__":
+    # Run the example initialization
     asyncio.run(main())
+    
+    # Start the server with stdio transport (this is non-async in FastMCP)
+    app.run(transport="stdio")

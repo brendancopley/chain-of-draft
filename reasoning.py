@@ -3,7 +3,7 @@ Reasoning selector module for the Chain of Draft MCP server.
 Handles choosing between CoD and CoT approaches.
 """
 
-from .complexity import ComplexityEstimator
+from complexity import ComplexityEstimator
 
 class ReasoningSelector:
     """

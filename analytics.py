@@ -28,7 +28,7 @@ class InferenceRecord(Base):
     answer = Column(String)
     expected_answer = Column(String, nullable=True)
     is_correct = Column(Integer, nullable=True)  # 1=correct, 0=incorrect, null=unknown
-    metadata = Column(JSON, nullable=True)
+    meta_data = Column(JSON, nullable=True)  # Changed from metadata to meta_data to avoid SQLAlchemy reserved keyword
 
 
 class AnalyticsService:
@@ -65,7 +65,7 @@ class AnalyticsService:
                 answer=answer,
                 expected_answer=expected_answer,
                 is_correct=self._check_correctness(answer, expected_answer) if expected_answer else None,
-                metadata=metadata
+                meta_data=metadata
             )
             session.add(record)
             session.commit()

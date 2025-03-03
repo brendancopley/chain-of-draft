@@ -50,63 +50,98 @@ This MCP server implements the Chain of Draft (CoD) reasoning approach as descri
    - Support for both completions and chat interfaces
    - Easy integration into existing workflows
 
-## Implementation Plan
+## Setup and Installation
 
-### 1. Core Components
+### Prerequisites
+- Python 3.10+
+- Anthropic API key
 
-- `server.py`: Main MCP server implementation
-- `analytics.py`: Performance tracking and reporting
-- `complexity.py`: Problem complexity estimation
-- `examples.py`: Example database management
-- `format.py`: Format enforcement and validation
-- `reasoning.py`: Core reasoning logic (CoD and CoT)
-- `client.py`: OpenAI-compatible client wrapper
-
-### 2. Setup and Installation
+### Installation
 
 1. Clone the repository
-2. Install dependencies with `pip install -r requirements.txt`
-3. Configure API keys in `.env` file
-4. Run the server with `python server.py`
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Configure API keys in `.env` file:
+   ```
+   ANTHROPIC_API_KEY=your_api_key_here
+   ```
+4. Run the server:
+   ```bash
+   python server.py
+   ```
 
-### 3. Usage
+## Claude Desktop Integration
 
-#### MCP Server Integration
+To integrate with Claude Desktop:
 
-Connect to the server from any MCP client (e.g., Claude Desktop) to access reasoning tools.
+1. Install Claude Desktop from [claude.ai/download](https://claude.ai/download)
+2. Create or edit the Claude Desktop config file:
+   ```
+   ~/Library/Application Support/Claude/claude_desktop_config.json
+   ```
+3. Add the server configuration:
+   ```json
+   {
+       "mcpServers": {
+           "chain-of-draft": {
+               "command": "python3",
+               "args": ["/absolute/path/to/cod/server.py"],
+               "env": {
+                   "ANTHROPIC_API_KEY": "your_api_key_here"
+               }
+           }
+       }
+   }
+   ```
+4. Restart Claude Desktop
 
-#### Python/TypeScript Integration
+## Available Tools
+
+The Chain of Draft server provides the following tools:
+
+| Tool | Description |
+|------|-------------|
+| `chain_of_draft_solve` | Solve a problem using Chain of Draft reasoning |
+| `math_solve` | Solve a math problem with CoD |
+| `code_solve` | Solve a coding problem with CoD |
+| `logic_solve` | Solve a logic problem with CoD |
+| `get_performance_stats` | Get performance stats for CoD vs CoT |
+| `get_token_reduction` | Get token reduction statistics |
+| `analyze_problem_complexity` | Analyze problem complexity |
+
+## Developer Usage
+
+If you want to use the Chain of Draft client directly in your Python code:
 
 ```python
-from cod.client import ChainOfDraftClient
+from client import ChainOfDraftClient
 
-# Create client with OpenAI-compatible interface
+# Create client 
 cod_client = ChainOfDraftClient()
 
-# Use directly in place of OpenAI client
-response = await cod_client.chat(
-    model="claude-3-5-sonnet-20240620",
-    messages=[{"role": "user", "content": "Solve this math problem: 247 + 394 = ?"}],
+# Use directly
+result = await cod_client.solve_with_reasoning(
+    problem="Solve: 247 + 394 = ?",
     domain="math"
 )
 
-print(response['choices'][0]['message']['content'])
+print(f"Answer: {result['final_answer']}")
+print(f"Reasoning: {result['reasoning_steps']}")
+print(f"Tokens used: {result['token_count']}")
 ```
 
 ## Implementation Details
 
-The server consists of several integrated services:
+The server consists of several integrated components:
 
-1. **AnalyticsService**: Tracks performance metrics across different problem domains and reasoning approaches.
+1. **AnalyticsService**: Tracks performance metrics across different problem domains and reasoning approaches
+2. **ComplexityEstimator**: Analyzes problems to determine appropriate word limits
+3. **ExampleDatabase**: Manages and retrieves examples, transforming CoT examples to CoD format
+4. **FormatEnforcer**: Ensures reasoning steps adhere to word limits
+5. **ReasoningSelector**: Intelligently chooses between CoD and CoT based on problem characteristics
 
-2. **ComplexityEstimator**: Analyzes problems to determine appropriate word limits.
+## License
 
-3. **ExampleDatabase**: Manages and retrieves examples, transforming CoT examples to CoD format.
-
-4. **FormatEnforcer**: Ensures reasoning steps adhere to word limits.
-
-5. **ReasoningSelector**: Intelligently chooses between CoD and CoT based on problem characteristics.
-
-6. **ChainOfDraftClient**: Provides OpenAI-compatible interfaces for easy integration.
-
-All these components are integrated into an MCP server that exposes reasoning tools through the Model Context Protocol.
+This project is open-source and available under the MIT license.

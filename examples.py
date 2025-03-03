@@ -20,7 +20,7 @@ class Example(Base):
     answer = Column(String, nullable=False)
     domain = Column(String, nullable=False)
     approach = Column(String, nullable=False)  # "CoD" or "CoT"
-    metadata = Column(JSON, nullable=True)
+    meta_data = Column(JSON, nullable=True)  # Changed from metadata to avoid SQLAlchemy reserved keyword
 
 
 class ExampleDatabase:
@@ -142,7 +142,7 @@ class ExampleDatabase:
                 answer=answer,
                 domain=domain,
                 approach=approach,
-                metadata=metadata
+                meta_data=metadata
             )
             session.add(example)
             session.commit()

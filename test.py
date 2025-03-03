@@ -5,6 +5,7 @@ Test script for the Chain of Draft client.
 import asyncio
 import os
 from dotenv import load_dotenv
+# Use absolute import since this file might be run directly
 from client import ChainOfDraftClient
 
 # Load environment variables

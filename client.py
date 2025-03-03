@@ -9,11 +9,11 @@ import uuid
 import anthropic
 from dotenv import load_dotenv
 
-from .analytics import AnalyticsService
-from .complexity import ComplexityEstimator
-from .examples import ExampleDatabase
-from .format import FormatEnforcer
-from .reasoning import ReasoningSelector, create_cod_prompt, create_cot_prompt
+from analytics import AnalyticsService
+from complexity import ComplexityEstimator
+from examples import ExampleDatabase
+from format import FormatEnforcer
+from reasoning import ReasoningSelector, create_cod_prompt, create_cot_prompt
 
 # Load environment variables
 load_dotenv()

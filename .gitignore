@@ -1,5 +1,6 @@
-# Environment variables
+# Environment variables and configuration
 .env
+claude_desktop_config.json
 
 # Python artifacts
 __pycache__/
