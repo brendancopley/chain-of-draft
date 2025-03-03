@@ -220,7 +220,8 @@ async def main():
     await example_db.get_examples("math")  # This will trigger example loading if needed
     
     # Print startup message
-    print("Chain of Draft MCP Server starting...", file=os.sys.stderr)
+    import sys
+    print("Chain of Draft MCP Server starting...", file=sys.stderr)
 
 if __name__ == "__main__":
     # Run the example initialization
