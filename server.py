@@ -235,15 +235,12 @@ if __name__ == "__main__":
         # Run the example initialization
         asyncio.run(main())
         
-        # Start the server with stdio transport with explicit options
+        # Start the server with stdio transport
         print("Starting FastMCP server with stdio transport...", file=sys.stderr)
-        from mcp.server.fastmcp import FastMCPOptions
-        options = FastMCPOptions(
-            transport_type="stdio",
-            debug=True,
-            log_transport=True
-        )
-        app.run(options=options)
+        # Cannot use additional options directly, use environment variables instead
+        os.environ['MCP_DEBUG'] = '1'
+        os.environ['MCP_LOG_TRANSPORT'] = '1'
+        app.run(transport="stdio")
     except Exception as e:
         print(f"Error in server startup: {e}", file=sys.stderr)
         import traceback
