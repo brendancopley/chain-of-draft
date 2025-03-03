@@ -29,6 +29,16 @@ const pythonProcess = spawn('python3', [serverPath], {
   stdio: ['pipe', 'pipe', 'pipe']  // Explicitly define stdio
 });
 
+// Keep the process alive by sending a dummy input occasionally
+const keepAlive = setInterval(() => {
+  // Just checking if process is still running
+  if (pythonProcess.killed) {
+    clearInterval(keepAlive);
+    console.error("Python process was killed, exiting");
+    process.exit(1);
+  }
+}, 5000);
+
 // Pass stdin to the Python process
 process.stdin.pipe(pythonProcess.stdin);
 
