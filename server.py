@@ -224,8 +224,22 @@ async def main():
     print("Chain of Draft MCP Server starting...", file=sys.stderr)
 
 if __name__ == "__main__":
-    # Run the example initialization
-    asyncio.run(main())
+    import sys
     
-    # Start the server with stdio transport (this is non-async in FastMCP)
-    app.run(transport="stdio")
+    # Print debug information
+    print("Python version:", sys.version, file=sys.stderr)
+    print("Running in directory:", os.getcwd(), file=sys.stderr)
+    print("Environment variables:", dict(os.environ), file=sys.stderr)
+    
+    try:
+        # Run the example initialization
+        asyncio.run(main())
+        
+        # Start the server with stdio transport (this is non-async in FastMCP)
+        print("Starting FastMCP server with stdio transport...", file=sys.stderr)
+        app.run(transport="stdio")
+    except Exception as e:
+        print(f"Error in server startup: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)

@@ -18,12 +18,15 @@ if (!fs.existsSync(serverPath)) {
   process.exit(1);
 }
 
-// Launch the Python process
+// Launch the Python process with debugging
+console.error(`Starting Python process: python3 ${serverPath}`);
 const pythonProcess = spawn('python3', [serverPath], {
   env: {
     ...process.env,
-    PYTHONUNBUFFERED: '1' // Ensure Python output isn't buffered
-  }
+    PYTHONUNBUFFERED: '1', // Ensure Python output isn't buffered
+    DEBUG: '1'
+  },
+  stdio: ['pipe', 'pipe', 'pipe']  // Explicitly define stdio
 });
 
 // Pass stdin to the Python process
