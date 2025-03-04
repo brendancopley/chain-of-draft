@@ -53,10 +53,11 @@ This MCP server implements the Chain of Draft (CoD) reasoning approach as descri
 ## Setup and Installation
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.10+ (for Python implementation)
+- Node.js 18+ (for JavaScript implementation)
 - Anthropic API key
 
-### Installation
+### Python Installation
 
 1. Clone the repository
 2. Install dependencies:
@@ -72,6 +73,22 @@ This MCP server implements the Chain of Draft (CoD) reasoning approach as descri
    python server.py
    ```
 
+### JavaScript Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Configure API keys in `.env` file:
+   ```
+   ANTHROPIC_API_KEY=your_api_key_here
+   ```
+4. Run the server:
+   ```bash
+   node index.js
+   ```
+
 ## Claude Desktop Integration
 
 To integrate with Claude Desktop:
@@ -81,7 +98,7 @@ To integrate with Claude Desktop:
    ```
    ~/Library/Application Support/Claude/claude_desktop_config.json
    ```
-3. Add the server configuration:
+3. Add the server configuration (Python version):
    ```json
    {
        "mcpServers": {
@@ -95,7 +112,32 @@ To integrate with Claude Desktop:
        }
    }
    ```
+   
+   Or for the JavaScript version:
+   ```json
+   {
+       "mcpServers": {
+           "chain-of-draft": {
+               "command": "node",
+               "args": ["/absolute/path/to/cod/index.js"],
+               "env": {
+                   "ANTHROPIC_API_KEY": "your_api_key_here"
+               }
+           }
+       }
+   }
+   ```
 4. Restart Claude Desktop
+
+You can also use the Claude CLI to add the server:
+
+```bash
+# For Python implementation
+claude mcp add chain-of-draft -e ANTHROPIC_API_KEY="your_api_key_here" "python3 /absolute/path/to/cod/server.py"
+
+# For JavaScript implementation
+claude mcp add chain-of-draft -e ANTHROPIC_API_KEY="your_api_key_here" "node /absolute/path/to/cod/index.js"
+```
 
 ## Available Tools
 
@@ -112,6 +154,8 @@ The Chain of Draft server provides the following tools:
 | `analyze_problem_complexity` | Analyze problem complexity |
 
 ## Developer Usage
+
+### Python Client
 
 If you want to use the Chain of Draft client directly in your Python code:
 
@@ -132,15 +176,61 @@ print(f"Reasoning: {result['reasoning_steps']}")
 print(f"Tokens used: {result['token_count']}")
 ```
 
+### JavaScript Client
+
+For JavaScript/Node.js applications:
+
+```javascript
+import { Anthropic } from "@anthropic-ai/sdk";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
+
+// Create the Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// Import the Chain of Draft client
+import chainOfDraftClient from './lib/chain-of-draft-client.js';
+
+// Use the client
+async function solveMathProblem() {
+  const result = await chainOfDraftClient.solveWithReasoning({
+    problem: "Solve: 247 + 394 = ?",
+    domain: "math",
+    max_words_per_step: 5
+  });
+  
+  console.log(`Answer: ${result.final_answer}`);
+  console.log(`Reasoning: ${result.reasoning_steps}`);
+  console.log(`Tokens used: ${result.token_count}`);
+}
+
+solveMathProblem();
+```
+
 ## Implementation Details
 
-The server consists of several integrated components:
+The server is available in both Python and JavaScript implementations, both consisting of several integrated components:
+
+### Python Implementation
 
 1. **AnalyticsService**: Tracks performance metrics across different problem domains and reasoning approaches
 2. **ComplexityEstimator**: Analyzes problems to determine appropriate word limits
 3. **ExampleDatabase**: Manages and retrieves examples, transforming CoT examples to CoD format
 4. **FormatEnforcer**: Ensures reasoning steps adhere to word limits
 5. **ReasoningSelector**: Intelligently chooses between CoD and CoT based on problem characteristics
+
+### JavaScript Implementation
+
+1. **analyticsDb**: In-memory database for tracking performance metrics
+2. **complexityEstimator**: Analyzes problems to determine complexity and appropriate word limits
+3. **formatEnforcer**: Ensures reasoning steps adhere to word limits 
+4. **reasoningSelector**: Automatically chooses between CoD and CoT based on problem characteristics and historical performance
+
+Both implementations follow the same core principles and provide identical MCP tools, making them interchangeable for most use cases.
 
 ## License
 
