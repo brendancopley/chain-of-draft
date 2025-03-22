@@ -7,6 +7,10 @@ import os
 import time
 import uuid
 import anthropic
+import openai
+from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
+import requests
 from dotenv import load_dotenv
 
 from analytics import AnalyticsService
@@ -18,6 +22,165 @@ from reasoning import ReasoningSelector, create_cod_prompt, create_cot_prompt
 # Load environment variables
 load_dotenv()
 
+class UnifiedLLMClient:
+    """
+    Unified client that supports multiple LLM providers (Anthropic, OpenAI, Mistral, Ollama).
+    """
+    
+    def __init__(self):
+        """Initialize the appropriate client based on environment variables."""
+        self.provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
+        self.model = os.getenv("LLM_MODEL", "claude-3-7-sonnet-latest")
+        
+        # Initialize the appropriate client
+        if self.provider == "anthropic":
+            if not os.getenv("ANTHROPIC_API_KEY"):
+                raise ValueError("ANTHROPIC_API_KEY is required for Anthropic provider")
+            self.client = anthropic.Anthropic(
+                api_key=os.getenv("ANTHROPIC_API_KEY"),
+                base_url=os.getenv("ANTHROPIC_BASE_URL")
+            )
+        
+        elif self.provider == "openai":
+            if not os.getenv("OPENAI_API_KEY"):
+                raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
+            self.client = openai.OpenAI(
+                api_key=os.getenv("OPENAI_API_KEY"),
+                base_url=os.getenv("OPENAI_BASE_URL")
+            )
+        
+        elif self.provider == "mistral":
+            if not os.getenv("MISTRAL_API_KEY"):
+                raise ValueError("MISTRAL_API_KEY is required for Mistral provider")
+            self.client = MistralClient(
+                api_key=os.getenv("MISTRAL_API_KEY")
+            )
+        
+        elif self.provider == "ollama":
+            self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        
+        else:
+            raise ValueError(f"Unsupported LLM provider: {self.provider}")
+    
+    async def get_available_models(self):
+        """Get list of available models from the current provider."""
+        try:
+            if self.provider == "anthropic":
+                response = await self.client.models.list()
+                return [model.id for model in response.data]
+            
+            elif self.provider == "openai":
+                response = await self.client.models.list()
+                return [model.id for model in response.data]
+            
+            elif self.provider == "mistral":
+                response = await self.client.list_models()
+                return [model.id for model in response.data] if response.data else []
+            
+            elif self.provider == "ollama":
+                response = requests.get(f"{self.base_url}/api/tags")
+                return [model["name"] for model in response.json()["models"]]
+            
+            return []
+        
+        except Exception as e:
+            print(f"Error fetching models: {e}")
+            return []
+    
+    async def chat(self, messages, model=None, max_tokens=None, temperature=None):
+        """
+        Send chat messages to the current provider.
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+            model: Optional model override
+            max_tokens: Optional max tokens limit
+            temperature: Optional temperature setting
+            
+        Returns:
+            Dict with response content and token usage
+        """
+        model = model or self.model
+        
+        try:
+            if self.provider == "anthropic":
+                response = await self.client.messages.create(
+                    model=model,
+                    messages=[{
+                        "role": msg["role"],
+                        "content": msg["content"]
+                    } for msg in messages],
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                return {
+                    "content": response.content[0].text,
+                    "usage": {
+                        "input_tokens": response.usage.input_tokens,
+                        "output_tokens": response.usage.output_tokens
+                    }
+                }
+            
+            elif self.provider == "openai":
+                response = await self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                return {
+                    "content": response.choices[0].message.content,
+                    "usage": {
+                        "input_tokens": response.usage.prompt_tokens,
+                        "output_tokens": response.usage.completion_tokens
+                    }
+                }
+            
+            elif self.provider == "mistral":
+                response = await self.client.chat(
+                    model=model,
+                    messages=[ChatMessage(
+                        role=msg["role"],
+                        content=msg["content"]
+                    ) for msg in messages],
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                return {
+                    "content": response.choices[0].message.content,
+                    "usage": {
+                        "input_tokens": response.usage.prompt_tokens,
+                        "output_tokens": response.usage.completion_tokens
+                    }
+                }
+            
+            elif self.provider == "ollama":
+                response = requests.post(
+                    f"{self.base_url}/api/chat",
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "options": {
+                            "num_predict": max_tokens,
+                            "temperature": temperature
+                        }
+                    }
+                )
+                data = response.json()
+                return {
+                    "content": data["message"]["content"],
+                    "usage": {
+                        "input_tokens": 0,  # Ollama doesn't provide token counts
+                        "output_tokens": 0
+                    }
+                }
+            
+            raise ValueError(f"Unsupported provider: {self.provider}")
+        
+        except Exception as e:
+            print(f"Error in chat: {e}")
+            raise
+
 class ChainOfDraftClient:
     """
     Drop-in replacement for OpenAI client that uses Chain of Draft reasoning.
@@ -26,8 +189,8 @@ class ChainOfDraftClient:
     
     def __init__(self, api_key=None, base_url=None, **kwargs):
         """Initialize the client with optional API key and settings."""
-        # Initialize the underlying LLM client
-        self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"))
+        # Initialize the unified LLM client
+        self.llm_client = UnifiedLLMClient()
         
         # Initialize services
         self.analytics = AnalyticsService()
@@ -38,12 +201,11 @@ class ChainOfDraftClient:
         
         # Default settings
         self.default_settings = {
-            "max_words_per_step": 5,
+            "max_words_per_step": 8,
             "enforce_format": True,
             "adaptive_word_limit": True,
             "track_analytics": True,
-            "model": "claude-3-5-sonnet-20240620",
-            "max_tokens": 500
+            "max_tokens": 200000
         }
         
         # Update with any provided kwargs
@@ -257,15 +419,15 @@ class ChainOfDraftClient:
             prompt = create_cot_prompt(problem, domain, examples)
         
         # Generate response from LLM
-        response = await self.client.messages.create(
-            model=local_settings.get("model", "claude-3-5-sonnet-20240620"),
+        response = await self.llm_client.chat(
+            [{"role": "user", "content": prompt["user"]}],
+            model=local_settings.get("model", "claude-3-7-sonnet-latest"),
             max_tokens=local_settings.get("max_tokens", 500),
-            system=prompt["system"],
-            messages=[{"role": "user", "content": prompt["user"]}]
+            temperature=local_settings.get("temperature", 0.7)
         )
         
         # Extract reasoning and answer
-        full_response = response.content[0].text
+        full_response = response["content"]
         parts = full_response.split("####")
         
         reasoning = parts[0].strip()
