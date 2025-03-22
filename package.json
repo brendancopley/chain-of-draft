@@ -1,5 +1,5 @@
 {
-  "name": "mcp-chain-of-draft-prompt-tool",
+  "name": "chain-of-draft",
   "version": "1.0.0",
   "description": "MCP Chain of Draft (CoD) Prompt Tool - A Model Context Protocol tool for efficient reasoning",
   "type": "module",
@@ -22,7 +22,7 @@
     "reasoning",
     "prompt-tool"
   ],
-  "author": "brendancopley",
+  "author": "stat-guy",
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.19.0",

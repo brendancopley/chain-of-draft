@@ -31,7 +31,7 @@ format_enforcer = FormatEnforcer()
 cod_client = ChainOfDraftClient()
 
 # Initialize FastMCP server
-app = FastMCP("mcp-chain-of-draft-prompt-tool")
+app = FastMCP("chain-of-draft")
 
 @app.tool()
 async def chain_of_draft_solve(
